@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>메랜파모 - 메이플랜드 파티 모집</title>
+  <meta name="description" content="빠르고 간편한 파티 모집, 메랜파모와 함께 시작하세요." />
+  <meta name="keywords" content="메이플랜드, 파티모집, 메랜파모, 파모" />
+  <meta name="author" content="pamo.world" />
+  <meta name="robots" content="index, follow" />
+
+  <!-- Open Graph (카톡/페북 공유용) -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pamo.world/">
+  <meta property="og:title" content="메랜파모 - 메이플랜드 파티 모집" />
+  <meta property="og:description" content="빠르고 간편한 파티 모집, 메랜파모와 함께 시작하세요." />
+  <meta property="og:image" content="https://pamo.world/og-image.jpg">
+
+  <!-- Twitter 카드 -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="메랜파모 - 메이플랜드 파티 모집" />
+  <meta name="twitter:description" content="빠르고 간편한 파티 모집, 메랜파모와 함께 시작하세요." />
+  <meta name="twitter:image" content="https://pamo.world/og-image.jpg">
+
+  <!-- 파비콘 -->
+  <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-title" content="메랜파모" />
+  <link rel="manifest" href="/site.webmanifest" />
+
+  <script>
+    (function () {
+      const stored = localStorage.getItem('darkMode');
+
+      if (stored === 'enabled') {
+        document.documentElement.classList.add('dark-mode');
+      } else if (stored === 'disabled') {
+        document.documentElement.classList.remove('dark-mode');
+      } else {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.classList.toggle('dark-mode', prefersDark);
+        localStorage.setItem('darkMode', prefersDark ? 'enabled' : 'disabled');
+      }
+    })();
+  </script>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.css" />
+</head>
+
+<body>
+  <header>
+    <h1>메랜파모</h1>
+    <button id="darkModeToggle" aria-label="Toggle dark mode" tabindex="-1">🌙</button>
+  </header>
+
+  <div id="mainUI">
+    <div id="loadingOverlay"></div>
+    <div class="top-sections">
+      <section id="myInfoSection" class="card">
+        <div class="section-header">
+          <h2>내 정보</h2>
+          <button id="toggleMyInfoBtn" aria-expanded="true" aria-controls="MyinfoContents">접기</button>
+        </div>
+        <div id="MyinfoContents">
+          <!-- 닉네임 + 소셜코드 -->
+          <div class="form-row">
+            <div class="form-group">
+              <input id="nicknameInput" type="text" placeholder="캐릭터 닉네임" />
+            </div>
+            <div class="form-group">
+              <input id="socialCodeInput" type="text" placeholder="소셜코드 (#ABCDE)" maxlength="6" />
+            </div>
+          </div>
+
+          <!-- 레벨 + 직업 -->
+          <div class="form-row job-row">
+            <!-- 왼쪽: 레벨 + 분류 -->
+            <div class="level-category-group">
+              <div class="form-group">
+                <input type="number" id="levelInput" min="1" max="200" placeholder="레벨" />
+              </div>
+              <div class="form-group">
+                <select id="jobCategorySelect" required>
+                  <option value="" selected disabled>직업</option>
+                  <option value="전사">전사</option>
+                  <option value="법사">법사</option>
+                  <option value="궁수">궁수</option>
+                  <option value="도적">도적</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- 오른쪽: 직업 상세 -->
+            <div class="form-group">
+              <select id="jobSelect" required disabled>
+                <option value="" selected disabled>상세 직업</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <div class="form-group">
+              <input id="extraInfoInput" type="text" placeholder="추가 정보 (스공/마력, 스킬)" />
+            </div>
+          </div>
+          <div id="infoContent">
+            <span id="saveMsg"></span>
+            <button id="saveUserBtn" class="button-primary">저장</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="myPartySection" class="card">
+        <h2>내 파티</h2>
+
+        <div id="noPartyDiv">
+          <!-- 파티 이름 입력 + 위치 추가 버튼을 한 줄로 배치 -->
+          <div class="party-name-row">
+            <input type="text" id="partyNameInput" placeholder="사냥터 이름" autocomplete="off" />
+            <button id="addPositionBtn" class="icon-button" title="위치 추가">➕</button>
+          </div>
+
+          <div class="form-group">
+            <input type="text" id="partyDescriptionInput" placeholder="파티 설명 입력" maxlength="50" />
+          </div>
+
+          <!-- 동적으로 추가되는 위치 입력칸들 -->
+          <div id="positionInputsContainer"></div>
+
+          <!-- 파티 생성 버튼 -->
+          <div class="button-container">
+            <button id="createPrivatePartyBtn" class="private-button" tabindex="-1">🔓 암호 없음</button>
+            <button id="createPartyBtn" class="button-primary" tabindex="-1" disabled>파티 생성</button>
+          </div>
+
+          <!-- 위치 목록 (UI에 따라 숨기거나 표시 가능) -->
+          <ul id="positionsList"></ul>
+        </div>
+
+        <div id="partyInfoDiv" style="display:none;">
+          <h3 id="partyNameTitle"></h3>
+          <div class="party-description-container form-group">
+            <!-- 파티 설명 수정용 입력창 (파티장에게만 노출) -->
+            <div id="partyDescriptionContainer" class="party-description-container" style="display:none;">
+              <input type="text" id="partyDescriptionEdit" placeholder="파티 설명 입력" maxlength="50" />
+              <button id="editDescriptionBtn" class="edit-btn">수정</button>
+            </div>
+
+            <!-- 파티 설명 읽기 전용 뷰 (파티원에게 노출) -->
+            <div id="partyDescriptionView" style="display:none;"></div>
+          </div>
+          <ul id="partyMembersList" class="member-list"></ul>
+          <div id="partyControls"></div>
+        </div>
+      </section>
+    </div>
+
+    <section id="joinRequestsSection" class="card" style="display:none;">
+      <h2>가입 요청 리스트</h2>
+      <ul id="joinRequestsList" class="request-list"></ul>
+    </section>
+
+    <section id="allPartiesSection" class="card">
+      <h2>전체 파티 리스트</h2>
+      <input type="text" id="partySearchInput" placeholder="사냥터 이름 검색" />
+      <ul id="allPartiesList" class="party-list"></ul>
+      <p id="noPartiesMsg" style="display: none;">현재 가입 가능한 파티가 없습니다.</p>
+    </section>
+  </div>
+
+  <footer style="text-align:center;padding:12px;font-size:14px;color:#666;border-top:1px solid #e0e0e0;">
+    <span style="margin-right:8px;">Contact</span>•<span style="margin-left:8px;">pamo.world.master@gmail.com</span><br>
+    © 2025 메랜파모
+  </footer>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>
