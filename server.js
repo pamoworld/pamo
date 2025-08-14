@@ -41,6 +41,7 @@ function getPartyMembersData(party) {
                 level: u.level,
                 job: u.job,
                 socialCode: u.socialCode || null,
+                extraInfo: u.extraInfo || null,
                 position
             });
         }
@@ -48,28 +49,31 @@ function getPartyMembersData(party) {
     return arr;
 }
 
+// 내 파티 정보만 업데이트
+function sendMyParty(user) {
+    let myParty = null;
+
+    if (user.partyId && parties.has(user.partyId)) {
+        const party = parties.get(user.partyId);
+        myParty = {
+            partyId: party.partyId,
+            partyName: party.partyName,
+            description: party.description,
+            hasPassword: !!party.password,
+            positions: party.positions,
+            leaderId: party.leaderId,
+            members: getPartyMembersData(party),
+            joinRequests: getJoinRequests(party),
+            createdAt: party.createdAt
+        };
+    }
+
+    return myParty;
+}
+
 function sendUserParties(socket, user) {
     try {
-        let myParty = null;
-
-        if (user.partyId && parties.has(user.partyId)) {
-            const party = parties.get(user.partyId);
-            const members = getPartyMembersData(party);
-
-            const joinRequestsArray = getJoinRequests(party);
-
-            myParty = {
-                partyId: party.partyId,
-                partyName: party.partyName,
-                description: party.description,
-                hasPassword: !!party.password,  // 암호 존재 여부
-                positions: party.positions,
-                leaderId: party.leaderId,
-                members,
-                joinRequests: joinRequestsArray,
-                createdAt: party.createdAt
-            };
-        }
+        let myParty = sendMyParty(user);
 
         const allPartiesList = [];
         const now = Date.now();
@@ -118,7 +122,10 @@ function updatePartyMembers(partyId) {
 
         const memberSocket = io.sockets.sockets.get(member.socketId);
         if (memberSocket) {
-            sendUserParties(memberSocket, member);
+            // 전체 목록 갱신 대신 내 파티 정보만 전송
+            memberSocket.emit('update_my_party', {
+                myParty: sendMyParty(member)
+            });
         }
     }
 }
@@ -384,7 +391,6 @@ io.on('connection', socket => {
             const memberSocket = io.sockets.sockets.get(member.socketId);
             if (memberSocket) {
                 memberSocket.emit('party_disbanded');
-                sendUserParties(memberSocket, member);
             }
         }
 
@@ -406,9 +412,6 @@ io.on('connection', socket => {
         if (sock) {
             sock.emit('left_party');
         }
-
-        // 각 파티원의 파티 리스트 갱신 처리
-        updatePartyMembers(pid);
     });
 
     socket.on('kick_member', data => {
@@ -427,9 +430,6 @@ io.on('connection', socket => {
                 sock.emit('kicked_from_party');
             }
         }
-
-        // 각 파티원의 파티 리스트 갱신 처리
-        updatePartyMembers(pid);
 
         logEvent('파티 추방', `userId=${targetUserId}, from partyId=${pid}`);
     });
@@ -465,6 +465,11 @@ io.on('connection', socket => {
 
             const targetSocket = io.sockets.sockets.get(user.socketId);
             if (targetSocket) {
+                targetSocket.emit('join_request_rejected', {
+                    partyId: partyId,
+                    position: position
+                });
+
                 getPartyDetails(partyId, targetSocket);
             }
         }
@@ -613,6 +618,11 @@ io.on('connection', socket => {
                         const otherUser = users.get(uid);
                         const otherSocket = io.sockets.sockets.get(otherUser?.socketId);
                         if (otherSocket) {
+                            otherSocket.emit('join_request_rejected', {
+                                partyId: pid,
+                                position: position
+                            });
+
                             getPartyDetails(pid, otherSocket);
                         }
                     }
@@ -631,16 +641,17 @@ io.on('connection', socket => {
                 // 가입 수락 처리
                 const targetSocket = io.sockets.sockets.get(targetUser.socketId);
                 if (targetSocket) {
+                    const leaderUser = users.get(party.leaderId);
+
                     targetSocket.emit('joined_party', {
                         partyId: pid,
                         partyName: party.partyName,
                         positions: party.positions,
                         leaderId: party.leaderId,
+                        leaderNickname: leaderUser.nickname,
+                        leaderSocialCode: leaderUser.socialCode,
                         members: getPartyMembersData(party),
                     });
-
-                    // 파티 상세정보 갱신
-                    getPartyDetails(pid, targetSocket);
                 }
 
                 for (const memberId of party.members.keys()) {

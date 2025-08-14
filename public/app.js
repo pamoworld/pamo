@@ -284,7 +284,6 @@ function updateJobOptions() {
 levelInput.addEventListener("input", () => {
     let val = parseInt(levelInput.value, 10);
     if (val > 200) val = 200;
-    if (val < 1 || isNaN(val)) val = 1;
     levelInput.value = val;
     updateJobOptions();
 });
@@ -330,6 +329,97 @@ let positionCount = 0;
 const maxPositions = 8;
 
 const pendingRequests = new Map();
+
+// 툴팁
+let currentTooltip = null;
+let tooltipTarget = null;
+
+function showTooltip(message, targetEl) {
+    if (currentTooltip) currentTooltip.remove();
+
+    tooltipTarget = targetEl;
+
+    const tip = document.createElement("div");
+    tip.textContent = message;
+    Object.assign(tip.style, {
+        position: "absolute",
+        background: "rgba(0,0,0,0.85)",
+        color: "#fff",
+        padding: "6px 10px",
+        borderRadius: "6px",
+        zIndex: "9999",
+        lineHeight: "1.4",
+        maxWidth: "320px",
+        whiteSpace: "normal",
+        wordBreak: "break-word",
+        overflowWrap: "anywhere",
+        boxSizing: "border-box",
+    });
+    document.body.appendChild(tip);
+
+    const rect = targetEl.getBoundingClientRect();
+    const tr = tip.getBoundingClientRect();
+
+    // 기본: 하단
+    let top = window.scrollY + rect.bottom + 8;
+    // let left = window.scrollX + rect.left + (rect.width - tr.width) / 2;
+    let left = window.scrollX + rect.left;
+
+    // 하단 공간 부족 → 상단
+    if (window.innerHeight - rect.bottom < tr.height + 8) {
+        top = window.scrollY + rect.top - tr.height - 8;
+    }
+
+    // 좌우 화면 밖 보정
+    const margin = 8;
+    const minLeft = window.scrollX + margin;
+    const maxLeft = window.scrollX + window.innerWidth - tr.width - margin;
+    if (left < minLeft) left = minLeft;
+    if (left > maxLeft) left = maxLeft;
+
+    // 상/하 화면 밖 보정
+    const minTop = window.scrollY + margin;
+    const maxTop = window.scrollY + window.innerHeight - tr.height - margin;
+    if (top < minTop) top = minTop;
+    if (top > maxTop) top = maxTop;
+
+    tip.style.top = `${top}px`;
+    tip.style.left = `${left}px`;
+
+    currentTooltip = tip;
+}
+
+// PC/모바일 구분해서 이벤트 바인딩
+function bindTooltipEvents(el, message) {
+    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+    if (isTouch) {
+        // 모바일 → 클릭 시 표시
+        el.addEventListener("click", (e) => {
+            e.stopPropagation();
+            showTooltip(message, el);
+        });
+    } else {
+        // PC → 마우스 오버 시 표시
+        el.addEventListener("mouseenter", () => showTooltip(message, el));
+        el.addEventListener("mouseleave", () => {
+            if (currentTooltip) {
+                currentTooltip.remove();
+                currentTooltip = null;
+                tooltipTarget = null;
+            }
+        });
+    }
+}
+
+// 바깥 클릭 시 닫기
+document.addEventListener("click", (e) => {
+    if (currentTooltip && !currentTooltip.contains(e.target) && e.target !== tooltipTarget) {
+        currentTooltip.remove();
+        currentTooltip = null;
+        tooltipTarget = null;
+    }
+});
 
 // 메시지 변수
 let svgmsgElement = null;  // 현재 표시 중인 메시지
@@ -598,7 +688,7 @@ function createPositionRow(label = '') {
     removeBtn.type = 'button';
     removeBtn.textContent = '➖';
     removeBtn.className = 'remove-position-btn';
-    crownBtn.title = '위치 삭제';
+    removeBtn.title = '위치 삭제';
     removeBtn.setAttribute('tabindex', '-1');
     removeBtn.onclick = () => {
         if (positionCount <= 2) {
@@ -863,14 +953,15 @@ function renderJoinRequests(requests, partyPositions) {
             const mainInfo = document.createElement('div');
             mainInfo.classList.add('main-info');
             mainInfo.textContent = `👤 Lv.${userReq.level} ${userReq.job} 🆔 ${displayName}`;
-
-            const extraInfo = document.createElement('div');
-            extraInfo.classList.add('extra-info');
-            extraInfo.textContent = `ℹ️ ${userReq.extraInfo}`;
-            extraInfo.title = userReq.extraInfo; // 툴팁
-
             infoContainer.appendChild(mainInfo);
-            infoContainer.appendChild(extraInfo);
+
+            if (userReq.extraInfo) {
+                const extraInfo = document.createElement('div');
+                extraInfo.classList.add('extra-info');
+                extraInfo.textContent = `ℹ️ ${userReq.extraInfo}`;
+                bindTooltipEvents(extraInfo, extraInfo.textContent);
+                infoContainer.appendChild(extraInfo);
+            }
 
             const buttonContainer = document.createElement('div');
             buttonContainer.classList.add('button-container');
@@ -910,26 +1001,54 @@ function renderJoinRequests(requests, partyPositions) {
     });
 }
 
-// 위치별 멤버 표시
+// 내 파티 위치별 멤버 표시
 function renderPartyPositions(positions, members) {
     partyMembersList.innerHTML = '';
 
     positions.forEach(position => {
         const li = document.createElement('li');
-        li.className = 'member-info';
-        li.style.marginBottom = '6px';
+        li.className = 'party-member-info';
 
         const { name, amount, isGrant } = position;
         const amtText = amount ? ` (${amount}만 ${isGrant ? '지원💸' : '지참'})` : '';
         const assigned = members.find(m => m.position?.id === position.id);
+
+        const posDiv = document.createElement('div');
+        posDiv.classList.add('pos');
+        posDiv.textContent = `📌 ${name}${amtText}`;
+
+        const infoContainer = document.createElement('div');
+        infoContainer.classList.add('info-container');
+
+        const mainInfo = document.createElement('div');
+        mainInfo.classList.add('main-info');
+
         if (assigned) {
             const displayName = assigned.socialCode ? `${assigned.nickname} (${assigned.socialCode})` : assigned.nickname;
-            li.innerHTML = `
-                <span class="pos">📌 ${name}${amtText}</span>
-                <span class="info">👤 Lv.${assigned.level} ${assigned.job} 🆔 ${displayName}</span>
-            `;
+            mainInfo.textContent = `👤 Lv.${assigned.level} ${assigned.job} 🆔 ${displayName}`;
+            infoContainer.appendChild(mainInfo);
 
-            if (amIPartyLeader && assigned.userId !== myUserId) {
+            if (assigned.extraInfo) {
+                const extraInfo = document.createElement('div');
+                extraInfo.classList.add('extra-info');
+                extraInfo.textContent = `ℹ️ ${assigned.extraInfo}`;
+                bindTooltipEvents(extraInfo, assigned.extraInfo);
+                infoContainer.appendChild(extraInfo);
+            }
+        } else {
+            if (position.closed) {
+                mainInfo.textContent = '✅ 모집 완료';
+            }
+            else {
+                mainInfo.textContent = '🪑 모집 중';
+            }
+            infoContainer.appendChild(mainInfo);
+        }
+
+        const buttonContainer = document.createElement('div');
+
+        if (amIPartyLeader) {
+            if (assigned && assigned.userId !== myUserId) {
                 const kickBtn = document.createElement('button');
                 kickBtn.textContent = '추방';
                 kickBtn.className = 'kick red-button small-button';
@@ -941,52 +1060,41 @@ function renderPartyPositions(positions, members) {
                         });
                     }
                 };
-                li.appendChild(kickBtn);
-            }
-        } else {
-            if (position.closed) {
-                li.innerHTML = `
-                    <span class="pos">📌 ${name}${amtText}</span>
-                    <span class="info">✅ 모집 완료</span>
-                `;
+                buttonContainer.appendChild(kickBtn);
 
-                if (amIPartyLeader) {
-                    const reopenBtn = document.createElement('button');
-                    reopenBtn.textContent = '완료 취소';
-                    reopenBtn.className = 'yellow-button small-button';
-                    reopenBtn.onclick = () => {
-                        if (confirm(`"${position.name}" 모집 완료를 취소하시겠습니까?`)) {
-                            socket.emit('reopen_position', {
-                                partyId: myPartyId,
-                                positionId: position.id
-                            });
-                        }
-                    };
-                    li.appendChild(reopenBtn);
-                }
+            } else if (!assigned && position.closed) {
+                const reopenBtn = document.createElement('button');
+                reopenBtn.textContent = '완료 취소';
+                reopenBtn.className = 'yellow-button small-button';
+                reopenBtn.onclick = () => {
+                    if (confirm(`"${position.name}" 모집 완료를 취소하시겠습니까?`)) {
+                        socket.emit('reopen_position', {
+                            partyId: myPartyId,
+                            positionId: position.id
+                        });
+                    }
+                };
+                buttonContainer.appendChild(reopenBtn);
 
-            } else {
-                li.innerHTML = `
-                    <span class="pos">📌 ${name}${amtText}</span>
-                    <span class="info">🪑 모집 중</span>
-                `;
-
-                if (amIPartyLeader) {
-                    const closeBtn = document.createElement('button');
-                    closeBtn.textContent = '모집 완료';
-                    closeBtn.className = 'green-button small-button';
-                    closeBtn.onclick = () => {
-                        if (confirm(`"${position.name}" 모집을 완료하시겠습니까?`)) {
-                            socket.emit('close_position', {
-                                partyId: myPartyId,
-                                positionId: position.id
-                            });
-                        }
-                    };
-                    li.appendChild(closeBtn);
-                }
+            } else if (!assigned && !position.closed) {
+                const closeBtn = document.createElement('button');
+                closeBtn.textContent = '모집 완료';
+                closeBtn.className = 'green-button small-button';
+                closeBtn.onclick = () => {
+                    if (confirm(`"${position.name}" 모집을 완료하시겠습니까?`)) {
+                        socket.emit('close_position', {
+                            partyId: myPartyId,
+                            positionId: position.id
+                        });
+                    }
+                };
+                buttonContainer.appendChild(closeBtn);
             }
         }
+
+        li.appendChild(posDiv);
+        li.appendChild(infoContainer);
+        li.appendChild(buttonContainer);
 
         partyMembersList.appendChild(li);
     });
@@ -1043,11 +1151,11 @@ function renderAllParties(allParties) {
         leftSpan.textContent = description
             ? `${lockIcon}${party.partyName} - ${description}`
             : `${lockIcon}${party.partyName}`;
-
         leftSpan.style.flex = '1'; // 좌측 정렬
         leftSpan.style.whiteSpace = 'nowrap';
         leftSpan.style.overflow = 'hidden';
         leftSpan.style.textOverflow = 'ellipsis';
+        bindTooltipEvents(leftSpan, leftSpan.textContent);
 
         const rightSpan = document.createElement('span');
         rightSpan.textContent = `👥 ${currentCount}/${totalCount}`;
@@ -1415,8 +1523,8 @@ saveUserBtn.onclick = () => {
 
     if (hasError) return;
 
-    // 닉네임 길이 제한 (최대 14자)
-    const maxNicknameLength = 14;
+    // 닉네임 길이 제한 (최대 16자)
+    const maxNicknameLength = 16;
     const nicknameArray = Array.from(nickname);
     if (nicknameArray.length > maxNicknameLength) {
         nickname = nicknameArray.slice(0, maxNicknameLength).join('');
@@ -1500,7 +1608,7 @@ createPartyBtn.onclick = () => {
 
     // 파티 이름 길이 제한
     let partyName = partyNameInput.value.trim();
-    const maxLength = 30;
+    const maxLength = 20;
     const charArray = Array.from(partyName);
     if (charArray.length > maxLength) {
         partyName = charArray.slice(0, maxLength).join('');
@@ -1509,7 +1617,7 @@ createPartyBtn.onclick = () => {
 
     // 파티 설명 길이 제한
     let description = partyDescriptionInput.value.trim();
-    const maxDescLength = 50;
+    const maxDescLength = 30;
     const descCharArray = Array.from(description);
     if (descCharArray.length > maxDescLength) {
         description = descCharArray.slice(0, maxDescLength).join('');
@@ -1587,6 +1695,11 @@ socket.on('party_disbanded', () => {
 });
 
 socket.on('joined_party', data => {
+    const message =
+        `📢 [${data.partyName}] 파티에 가입되었습니다.\n메이플월드 소셜 메뉴에서\n` +
+        `소셜 코드(${data.leaderSocialCode})로 친구 요청을 보내보세요.\n` +
+        `파티장 '${data.leaderNickname}'에게 귓속말을 보내도 됩니다.`;
+    alert(message);
     myPartyId = data.partyId;
     requestedPartyId = null;
     updateMyPartyUI({
@@ -1596,7 +1709,6 @@ socket.on('joined_party', data => {
         positions: data.positions || [],
         leaderId: data.leaderId || '',
         members: data.members,
-        // joinRequests: [],
     });
     socket.emit('request_all_parties');
 });
@@ -1642,6 +1754,19 @@ socket.on('update_user_parties', data => {
     setLoading(false);
 });
 
+socket.on('update_my_party', data => {
+    updateMyPartyUI(data.myParty);
+
+    const openId = localStorage.getItem('openPartyId');
+    if (openId) {
+        socket.emit('get_party_details', { partyId: openId });
+    }
+
+    requestedPartyId = null;
+
+    setLoading(false);
+});
+
 socket.on('party_details', party => {
     const partyItemContainer = document.querySelector(`[data-party-id="${party.partyId}"]`);
     if (!partyItemContainer) return;
@@ -1665,52 +1790,58 @@ socket.on('party_details', party => {
     party.positions.forEach(position => {
         const li = document.createElement('li');
         li.className = 'member-info';
-        const member = party.members.find(m => m.position?.id === position.id);
 
+        const member = party.members.find(m => m.position?.id === position.id);
         const { name, amount, isGrant } = position;
         const amtText = amount ? ` (${amount}만 ${isGrant ? '지원💸' : '지참'})` : '';
+
         const positionText = document.createElement('span');
         positionText.className = 'pos';
         positionText.textContent = `📌 ${name}${amtText}`;
         li.appendChild(positionText);
 
+        const infoContainer = document.createElement('div');
+        infoContainer.classList.add('info-container');
+
+        const mainInfo = document.createElement('div');
+        mainInfo.classList.add('main-info');
+
         if (member) {
-            const infoText = document.createElement('span');
-            infoText.className = 'info';
-            infoText.textContent = `👤 Lv.${member.level} ${member.job}`;
+            mainInfo.textContent = `👤 Lv.${member.level} ${member.job}`;
             if (member.userId === party.leaderId) {
-                infoText.textContent += ' 👑';
+                mainInfo.textContent += ' 👑';
             }
-            li.appendChild(infoText);
+            infoContainer.appendChild(mainInfo);
+
+            if (member.extraInfo) {
+                const extraInfo = document.createElement('div');
+                extraInfo.classList.add('extra-info');
+                extraInfo.textContent = `ℹ️ ${member.extraInfo}`;
+                bindTooltipEvents(extraInfo, member.extraInfo);
+                infoContainer.appendChild(extraInfo);
+            }
         } else {
-            const infoText = document.createElement('span');
-            infoText.className = 'info';
+            mainInfo.textContent = position.closed ? '✅ 모집 완료' : '🪑 모집 중';
+            infoContainer.appendChild(mainInfo);
+        }
+        li.appendChild(infoContainer);
 
-            if (position.closed) {
-                infoText.textContent = '✅ 모집 완료';
-                li.appendChild(infoText);
+        if (!member && !position.closed && !currentUserInParty) {
+            const requestBtn = document.createElement('button');
+            requestBtn.classList.add('button');
+            const requestedSet = pendingRequests.get(party.partyId);
+            if (requestedSet?.has(position.id)) {
+                requestBtn.textContent = '신청 중';
+                requestBtn.disabled = true;
             } else {
-                infoText.textContent = '🪑 모집 중';
-                li.appendChild(infoText);
-
-                if (!currentUserInParty) {
-                    const requestBtn = document.createElement('button');
-                    requestBtn.classList.add('button');
-                    const requestedSet = pendingRequests.get(party.partyId);
-                    if (requestedSet?.has(position.id)) {
-                        requestBtn.textContent = '신청 중';
-                        requestBtn.disabled = true;
-                    } else {
-                        requestBtn.textContent = '가입 신청';
-                        requestBtn.onclick = () => {
-                            requestJoinParty(party.partyId, position);
-                            requestBtn.textContent = '신청 중';
-                            requestBtn.disabled = true;
-                        };
-                    }
-                    li.appendChild(requestBtn);
-                }
+                requestBtn.textContent = '가입 신청';
+                requestBtn.onclick = () => {
+                    requestJoinParty(party.partyId, position);
+                    requestBtn.textContent = '신청 중';
+                    requestBtn.disabled = true;
+                };
             }
+            li.appendChild(requestBtn);
         }
 
         positionsList.appendChild(li);
@@ -1771,6 +1902,17 @@ document.addEventListener('DOMContentLoaded', () => {
             darkModeToggle.textContent = isDarkNow ? '☀️' : '🌙';
         };
     }
+
+    const emailEl = document.getElementById("email");
+    const iconEl = document.getElementById("copyIcon");
+
+    emailEl.addEventListener("click", () => {
+        navigator.clipboard.writeText(emailEl.textContent.trim());
+        iconEl.textContent = "✅";
+        setTimeout(() => {
+            iconEl.textContent = "📋";
+        }, 1000);
+    });
 
     setLoading(true);
 

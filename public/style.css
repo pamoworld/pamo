@@ -16,6 +16,7 @@
   --list-bg: #fafafa;
   --warning-color: #FF9900;
   --warning-color-dark: #CC7A00;
+  --extra-info-color: #555;
 }
 
 /* ========================================
@@ -76,6 +77,36 @@ ul li {
   align-items: center;
   font-size: 1rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+footer {
+  text-align: center;
+  padding: 12px;
+  font-size: 14px;
+  color: #666;
+  border-top: 1px solid #e0e0e0;
+  position: relative;
+}
+
+.contact-text {
+  display: inline-block;
+  position: relative;
+}
+
+#email {
+  cursor: pointer;
+}
+
+#copyIcon {
+  position: absolute;
+  opacity: 0;
+  margin-left: 4px;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+#email:hover+#copyIcon {
+  opacity: 1;
 }
 
 /* ========================================
@@ -415,6 +446,13 @@ button:disabled {
   align-items: center;
 }
 
+.party-member-info {
+  flex-direction: column;
+  align-items: flex-start;
+  white-space: normal;
+  gap: 4px;
+}
+
 .join-request-item {
   display: flex;
   flex-direction: row;
@@ -424,18 +462,29 @@ button:disabled {
   gap: 10px;
 }
 
+.member-info .info-container,
+.party-member-info .info-container,
 .join-request-item .info-container {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  width: 100%;
   min-width: 0;
 }
 
+.member-info .main-info {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.member-info .extra-info,
+.party-member-info .extra-info,
 .join-request-item .extra-info {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #555;
+  color: var(--extra-info-color);
   font-size: 0.9rem;
 }
 
@@ -507,6 +556,7 @@ html.dark-mode {
   --input-bg: #2c2c2c;
   --border-color: #555;
   --list-bg: #2c2c2c;
+  --extra-info-color: #aaa;
 }
 
 html.dark-mode li {
@@ -607,8 +657,7 @@ html.dark-mode input:disabled {
 /* ========================================
    파티 멤버 정보 스타일 (Party Member Info)
 ======================================== */
-.member-info,
-#myPartySection .member-info {
+.member-info {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -616,36 +665,11 @@ html.dark-mode input:disabled {
   overflow: hidden;
 }
 
-.member-info .pos,
-#myPartySection .member-info .pos {
+.member-info .pos {
   flex: 0 0 180px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.member-info .info,
-#myPartySection .member-info .info {
-  flex: 1 1 auto;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-#myPartySection .member-info {
-  flex-direction: column;
-  align-items: flex-start;
-  white-space: normal;
-}
-
-#myPartySection .member-info .pos,
-#myPartySection .member-info .info,
-#myPartySection .member-info .button {
-  flex: none;
-  width: auto;
-  white-space: normal;
-  overflow: visible;
-  text-overflow: clip;
 }
 
 /* ========================================
@@ -661,6 +685,7 @@ html.dark-mode input:disabled {
 #myInfoSection,
 #myPartySection {
   box-sizing: border-box;
+  min-width: 0;
 }
 
 #partyDescriptionContainer {
@@ -740,9 +765,7 @@ html.dark-mode input:disabled {
     white-space: normal;
   }
 
-  .member-info .pos,
-  .member-info .info,
-  .member-info .button {
+  .member-info .pos {
     flex: none;
     width: auto;
     white-space: normal;
