@@ -4,6 +4,8 @@ const socket = io('wss://pamo.world', {
 
 // 사냥터 리스트
 const rawMapList = [
+    '[이벤트] 슈피겔만 월드 보스 레이드',
+    
     '커닝시티 파티 퀘스트',
     '골렘의 숲',
     '야시장 사잇길1',
@@ -82,6 +84,8 @@ const rawMapList = [
 
 // 사냥터별 위치 리스트
 const locationTemplates = {
+    '[이벤트] 슈피겔만 월드 보스 레이드': ['1', '2', '3'],
+    
     '커닝시티 파티 퀘스트': ['1', '2', '3', '4'],
     '골렘의 숲': ['4층', '3층', '2층', '1층'],
     '야시장 사잇길1': ['좌1', '우1', '우2', '우3', '버블꾼', '경심'],
@@ -1925,3 +1929,4 @@ document.addEventListener('DOMContentLoaded', () => {
 document.querySelector('h1').addEventListener('click', function () {
     window.location.reload();  // 페이지 새로고침
 });
+
