@@ -1301,11 +1301,23 @@ function initializeAwesomplete() {
                 if (locationTemplates[item]) {
                     positionInputsContainer.innerHTML = '';
                     positionCount = 0;
+                    leaderPositionIndex = null;
+
+                    // 템플릿 적용
                     locationTemplates[item].forEach(pos => {
                         const newRow = createPositionRow(pos);
                         positionInputsContainer.appendChild(newRow);
                         positionCount++;
                     });
+
+                    // 템플릿 개수가 2개 미만이면, 빈 칸이라도 기본 2개까지 채워주기
+                    while (positionCount < 2) {
+                        const newRow = createPositionRow('');  // 빈 이름으로 생성
+                        positionInputsContainer.appendChild(newRow);
+                        positionCount++;
+                    }
+
+                    checkAllInputsFilled();
                     return;
                 }
                 else {
