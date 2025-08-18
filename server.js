@@ -212,7 +212,7 @@ io.on('connection', socket => {
                 disconnectTimer: null
             });
             socket.emit('user_id_assigned', { userId });
-            logEvent('신규 유저 접속', `userId=${userId}, socketId=${socket.id}`);
+            logEvent('신규 접속', `userId=${userId}, socketId=${socket.id}`);
         } else {
             // 새로고침 연타 등의 이슈에 대비
             const user = users.get(userId);
@@ -246,7 +246,6 @@ io.on('connection', socket => {
 
             user.socketId = socket.id;
             socket.emit('user_id_assigned', { userId });
-            logEvent('소켓 복구', `userId=${userId}, socketId=${socket.id}`);
             return;
         }
 
@@ -262,7 +261,6 @@ io.on('connection', socket => {
             disconnectTimer: null
         });
         socket.emit('user_restored', { userId });
-        logEvent('유저 재접속', `userId=${userId}, socketId=${socket.id}`);
     });
 
     // 내 정보 저장
@@ -277,7 +275,7 @@ io.on('connection', socket => {
         user.extraInfo = data.extraInfo;
 
         socket.emit('save_user_info_result', { success: true });
-        logEvent('유저 정보 저장', `userId=${userId}, 닉네임=${user.nickname} Lv.${user.level} ${user.job}`);
+        logEvent('유저 정보', `userId=${userId}, 닉네임=${user.nickname} Lv.${user.level} ${user.job}`);
     });
 
     socket.on('create_party', async (data, callback) => {
