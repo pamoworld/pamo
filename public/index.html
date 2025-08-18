@@ -78,7 +78,7 @@
 
           <!-- 레벨 + 직업 -->
           <div class="form-row job-row">
-            <!-- 왼쪽: 레벨 + 분류 -->
+            <!-- 레벨 + 분류 -->
             <div class="level-category-group">
               <div class="form-group">
                 <input type="number" id="levelInput" min="1" max="200" placeholder="레벨" />
@@ -94,7 +94,7 @@
               </div>
             </div>
 
-            <!-- 오른쪽: 직업 상세 -->
+            <!-- 직업 상세 -->
             <div class="form-group">
               <select id="jobSelect" required disabled>
                 <option value="" selected disabled>상세 직업</option>
@@ -118,7 +118,6 @@
         <h2>내 파티</h2>
 
         <div id="noPartyDiv">
-          <!-- 파티 이름 입력 + 위치 추가 버튼을 한 줄로 배치 -->
           <div class="party-name-row">
             <input type="text" id="partyNameInput" placeholder="사냥터 이름" autocomplete="off" />
             <button id="addPositionBtn" class="icon-button" title="위치 추가">➕</button>
@@ -128,7 +127,6 @@
             <input type="text" id="partyDescriptionInput" placeholder="파티 설명 입력" maxlength="50" />
           </div>
 
-          <!-- 동적으로 추가되는 위치 입력칸들 -->
           <div id="positionInputsContainer"></div>
 
           <!-- 파티 생성 버튼 -->
@@ -137,20 +135,20 @@
             <button id="createPartyBtn" class="button-primary" tabindex="-1" disabled>파티 생성</button>
           </div>
 
-          <!-- 위치 목록 (UI에 따라 숨기거나 표시 가능) -->
+          <!-- 위치 목록 -->
           <ul id="positionsList"></ul>
         </div>
 
         <div id="partyInfoDiv" style="display:none;">
           <h3 id="partyNameTitle"></h3>
           <div class="party-description-container form-group">
-            <!-- 파티 설명 수정용 입력창 (파티장에게만 노출) -->
+            <!-- 파티 설명 (파티장) -->
             <div id="partyDescriptionContainer" class="party-description-container" style="display:none;">
               <input type="text" id="partyDescriptionEdit" placeholder="파티 설명 입력" maxlength="50" />
               <button id="editDescriptionBtn" class="edit-btn">수정</button>
             </div>
 
-            <!-- 파티 설명 읽기 전용 뷰 (파티원에게 노출) -->
+            <!-- 파티 설명 (파티원) -->
             <div id="partyDescriptionView" style="display:none;"></div>
           </div>
           <ul id="partyMembersList" class="member-list"></ul>
@@ -183,7 +181,7 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.js"></script>
-  <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 
 </html>
