@@ -985,10 +985,12 @@ function renderAllParties(allParties) {
 
     const filteredParties = allParties.filter(party => filterPartyItem(party, searchTerm));
     if (filteredParties.length === 0) {
+        noPartiesMsg.textContent = '현재 가입 가능한 파티가 없습니다.';
         noPartiesMsg.style.display = 'block';
         allPartiesList.style.display = 'none';
         return;
     } else {
+        noPartiesMsg.textContent = '';
         noPartiesMsg.style.display = 'none';
         allPartiesList.style.display = 'block';
     }
@@ -1816,4 +1818,3 @@ document.addEventListener('DOMContentLoaded', () => {
 document.querySelector('h1').addEventListener('click', function () {
     window.location.reload();  // 페이지 새로고침
 });
-

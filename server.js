@@ -73,11 +73,13 @@ function sendMyParty(user) {
 
 function sendUserParties(socket, user) {
     try {
+        if (!user) return;
+
         let myParty = sendMyParty(user);
 
         const allPartiesList = [];
         const now = Date.now();
-        const MINUTES = 30 * 60 * 1000; // 30분
+        const MINUTES = 50 * 60 * 1000; // 50분
 
         for (const [pid, party] of parties.entries()) {
             // MINUTES 이상 지난 파티는 제외
@@ -533,7 +535,7 @@ io.on('connection', socket => {
         const party = parties.get(pid);
 
         const user = users.get(userId);
-        if (!user.nickname || !user.level) {
+        if (!user || !user.nickname || !user.level) {
             socket.emit('error_message', { message: '내 정보를 먼저 입력하고 저장하세요.' });
             return;
         }
