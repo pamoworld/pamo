@@ -666,7 +666,7 @@ html.dark-mode input:disabled {
 }
 
 .member-info .pos {
-  flex: 0 0 180px;
+  flex: 0 0 190px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

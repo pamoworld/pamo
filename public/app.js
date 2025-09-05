@@ -193,12 +193,12 @@ jobSelect.addEventListener("change", () => {
 let myUserId = null;
 let myPartyId = null;
 let amIPartyLeader = false;
-let privatePartyPassword = null;  // 비밀 파티 암호 저장용 변수
+let privatePartyPassword = null; // 비밀 파티 암호 저장용 변수
 
 let requestedPartyId = null;
 let pendingRefresh = false;
 
-const SOCIAL_CODE_PATTERN = /^#[A-Za-z0-9]{5}$/;  // ✅ 대소문자 + 숫자
+const SOCIAL_CODE_PATTERN = /^#[A-Za-z0-9]{5}$/;
 
 let positions = [];
 let leaderPositionIndex = null;
@@ -299,7 +299,7 @@ document.addEventListener("click", (e) => {
 });
 
 // 메시지 변수
-let svgmsgElement = null;  // 현재 표시 중인 메시지
+let svgmsgElement = null; // 현재 표시 중인 메시지
 let svgmsgInputElement = null; // 현재 표시 중인 에러 입력 필드
 let messageTimeout = null; // 메시지 타이머
 
@@ -338,8 +338,8 @@ function showFadingMessage(el, message, isError = false, inputElement = null) {
 
     // 3초 후 메시지와 빨간 테두리 삭제
     messageTimeout = setTimeout(() => {
-        if (svgmsgElement) svgmsgElement.remove();  // 메시지 삭제
-        if (svgmsgInputElement) svgmsgInputElement.classList.remove('input-error');  // 빨간 테두리 삭제
+        if (svgmsgElement) svgmsgElement.remove();
+        if (svgmsgInputElement) svgmsgInputElement.classList.remove('input-error');
 
         // 객체 초기화
         svgmsgElement = null;
@@ -400,7 +400,7 @@ function filterItems(item, input) {
 
     const chosungTarget = getChosungWithNumEng(itemLower);
 
-    // ✅ 초성 + 숫자 혼합 (숫자-초성 or 초성-숫자 구분해서 match)
+    // 초성 + 숫자 혼합 (숫자-초성 or 초성-숫자 구분해서 match)
     if (hasChosung && hasNumber && !hasWord) {
         const combinedInput = inputParts.filter(ch => /^[ㄱ-ㅎ0-9]$/.test(ch)).join('');
 
@@ -408,18 +408,18 @@ function filterItems(item, input) {
         return isSequentialMatch(chosungTarget, combinedInput);
     }
 
-    // ✅ 초성만
+    // 초성만
     if (hasChosung && !hasNumber && !hasWord) {
         const inputChosungStr = inputParts.join('');
         return isSequentialMatch(chosungTarget, inputChosungStr);
     }
 
-    // ✅ 숫자만
+    // 숫자만
     if (hasNumber && !hasChosung && !hasWord) {
         return inputParts.every(num => isSequentialMatch(itemLower, num));
     }
 
-    // ✅ 단어/문자 혼합은 원문 전체 대상으로 순서대로 포함 여부만 검사
+    // 단어/문자 혼합은 원문 전체 대상으로 순서대로 포함 여부만 검사
     return isSequentialMatch(itemLower, inputLower);
 }
 
