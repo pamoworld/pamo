@@ -63,7 +63,7 @@ function sendMyParty(user) {
             positions: party.positions,
             leaderId: party.leaderId,
             members: getPartyMembersData(party),
-            joinRequests: getJoinRequests(party),
+            joinRequests: (party.leaderId === user.userId) ? getJoinRequests(party) : [],
             createdAt: party.createdAt
         };
     }
@@ -341,6 +341,11 @@ io.on('connection', socket => {
             return;
         }
 
+        if (!party.password) {
+            callback({ success: true });
+            return;
+        }
+
         try {
             const isMatch = await bcrypt.compare(data.password, party.password);
             if (isMatch) {
@@ -412,6 +417,9 @@ io.on('connection', socket => {
         if (sock) {
             sock.emit('left_party');
         }
+
+        // 파티 멤버 전체에 최신 파티 상세정보 전송
+        updatePartyMembers(pid);
     });
 
     socket.on('kick_member', data => {
@@ -432,6 +440,9 @@ io.on('connection', socket => {
         }
 
         logEvent('파티 추방', `userId=${targetUserId}, from partyId=${pid}`);
+
+        // 파티 멤버 전체에 최신 파티 상세정보 전송
+        updatePartyMembers(pid);
     });
 
     // 모집 완료 처리
@@ -597,6 +608,9 @@ io.on('connection', socket => {
 
         if (!positionId || !posMap.has(positionId)) return;
 
+        const serverPosition = party.positions.find(p => p.id === positionId);
+        if (!serverPosition) return;
+
         if (accept) {
             if (!targetUser.partyId) {
                 // 유저를 해당 위치에 배정
@@ -700,7 +714,9 @@ io.on('connection', socket => {
         if (!userId) return;
 
         const user = users.get(userId);
-        if (user) user.socketId = null;
+        if (!user || user.socketId !== socket.id) return;
+
+        user.socketId = null;
 
         if (user.disconnectTimer) return;
 
@@ -709,31 +725,42 @@ io.on('connection', socket => {
             if (!stillUser || stillUser.socketId !== null) return;
 
             const pid = stillUser.partyId;
-            if (!pid || !parties.has(pid)) return;
+            if (pid && parties.has(pid)) {
+                const party = parties.get(pid);
 
-            const party = parties.get(pid);
-            if (party.leaderId === userId) {
-                for (const memberId of party.members.keys()) {
-                    const member = users.get(memberId);
-                    if (member) {
-                        member.partyId = null;
-                        const sock = io.sockets.sockets.get(member.socketId);
-                        if (sock) sock.emit('party_disbanded');
+                if (party.leaderId === userId) {
+                    // 파티 해체 (파티장)
+                    for (const memberId of [...party.members.keys()]) { // 안전하게 복사 후 반복
+                        if (memberId === userId) continue;
+
+                        const member = users.get(memberId);
+                        if (member) {
+                            member.partyId = null;
+                            const sock = io.sockets.sockets.get(member.socketId);
+                            if (sock) sock.emit('party_disbanded');
+                        }
                     }
+
+                    parties.delete(pid);
+                    logEvent('유저 종료로 인한 파티 해체', `partyName=${party.partyName}, leaderId=${userId}`);
+
+                } else {
+                    // 파티 탈퇴 (파티원)
+                    party.members.delete(userId);
+                    stillUser.partyId = null;
+
+                    const sock = io.sockets.sockets.get(stillUser.socketId);
+                    if (sock) sock.emit('left_party');
+                    logEvent('유저 종료로 인한 파티 탈퇴', `userId=${userId}, partyId=${pid}`);
+
+                    updatePartyMembers(pid);
                 }
-                parties.delete(pid);
-                logEvent('유저 종료로 인한 파티 해체', `partyName=${party.partyName}, leaderId=${userId}`);
-            } else {
-                party.members.delete(userId);
-                stillUser.partyId = null;
-                const sock = io.sockets.sockets.get(stillUser.socketId);
-                if (sock) sock.emit('left_party');
-                logEvent('유저 종료로 인한 파티 탈퇴', `userId=${userId}, partyId=${pid}`);
             }
 
-            users.delete(userId);
-
+            clearTimeout(stillUser.disconnectTimer);
             stillUser.disconnectTimer = null;
-        }, 4800000); // 1시간 20분 유지
+
+            users.delete(userId);
+        }, 4800000); // 1시간 20분
     });
 });
